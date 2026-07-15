@@ -8,7 +8,9 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.stereotype.Service;
 
 import com.Hiep.B23DCCN295.dto.request.AuthenticationRequest;
+import com.Hiep.B23DCCN295.dto.request.IntrospectRequest;
 import com.Hiep.B23DCCN295.dto.response.AuthenticationResponse;
+import com.Hiep.B23DCCN295.dto.response.IntrospectResponse;
 import com.Hiep.B23DCCN295.entity.UserEntity;
 import com.Hiep.B23DCCN295.repository.AuthenticationRepository;
 import com.nimbusds.jose.JWSAlgorithm;
@@ -16,7 +18,9 @@ import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSObject;
 import com.nimbusds.jose.Payload;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 
 @Service
 public class AuthenticationService {
@@ -56,6 +60,24 @@ public class AuthenticationService {
             jwsObject.sign(new MACSigner(SIGNER_KEY.getBytes()));
             return jwsObject.serialize(); 
         } catch (Exception e) {throw new RuntimeException(
+                "Token generation failed: " + e.getMessage(),
+                e
+            );
+        }
+    }
+
+    public IntrospectResponse introspect(IntrospectRequest request){
+        try {
+            String token = request.getToken();
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            boolean verified = signedJWT.verify(new MACVerifier(SIGNER_KEY.getBytes()));
+            Date expireDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+            boolean isValid = verified && expireDate.after(new Date());
+            IntrospectResponse introspectResponse = new IntrospectResponse();
+            introspectResponse.setIsvalid(isValid);
+            return introspectResponse;
+        } catch (Exception e) {
+            throw new RuntimeException(
                 "Token generation failed: " + e.getMessage(),
                 e
             );

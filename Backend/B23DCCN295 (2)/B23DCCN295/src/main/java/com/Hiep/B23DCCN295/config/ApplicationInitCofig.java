@@ -20,6 +20,14 @@ public class ApplicationInitCofig {
     @Bean
     ApplicationRunner applicationRunner(UserRopository userRopository,RoleRepository roleRepository){
         return arg->{
+            RoleEntity adminRole = roleRepository
+                    .findByName(Role.ADMIN.name())
+                    .orElseGet(() -> {
+                        RoleEntity role = new RoleEntity();
+                        role.setName(Role.ADMIN.name());
+                        role.setDescription("Quản trị viên");
+                        return roleRepository.save(role);
+                    });
             if(userRopository.findByRole_Name(Role.ADMIN.name()).isEmpty()){
                 Set<RoleEntity> role = new HashSet<>();
                 RoleEntity x = roleRepository.findByName(Role.ADMIN.name()).orElseThrow(() -> new RuntimeException("ADMIN role not found"));
