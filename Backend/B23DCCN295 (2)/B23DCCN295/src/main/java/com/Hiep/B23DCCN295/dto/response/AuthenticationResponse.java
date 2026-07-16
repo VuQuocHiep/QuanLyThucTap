@@ -4,6 +4,8 @@ public class AuthenticationResponse {
     
     private boolean authentication;
     private String token;
+    private String refreshToken;
+
     public boolean isAuthentication() {
         return authentication;
     }
@@ -15,6 +17,12 @@ public class AuthenticationResponse {
     }
     public void setToken(String token) {
         this.token = token;
+    }
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
     
 }

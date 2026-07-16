@@ -1,14 +1,16 @@
 package com.Hiep.B23DCCN295.service;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.stereotype.Service;
 
 import com.Hiep.B23DCCN295.dto.request.AuthenticationRequest;
 import com.Hiep.B23DCCN295.dto.request.IntrospectRequest;
+import com.Hiep.B23DCCN295.dto.request.RefreshTokenRequest;
 import com.Hiep.B23DCCN295.dto.response.AuthenticationResponse;
 import com.Hiep.B23DCCN295.dto.response.IntrospectResponse;
 import com.Hiep.B23DCCN295.entity.UserEntity;
@@ -39,21 +41,59 @@ public class AuthenticationService {
         if(!authentication){
             throw new RuntimeException("Invalid id or name");
         }
-        String token = genarateToken(userEntity);
+        String token = generateToken(userEntity, 60*60*1000);
+        String refreshToken = generateToken(userEntity, 7L * 24 * 60 * 60 * 1000);
         AuthenticationResponse authenticationResponse = new AuthenticationResponse();
         authenticationResponse.setAuthentication(true);
         authenticationResponse.setToken(token);
+        authenticationResponse.setRefreshToken(refreshToken);
         return authenticationResponse;
     }
 
-    public String genarateToken(UserEntity userEntity){
+    public AuthenticationResponse refreshToken(RefreshTokenRequest request){
         try {
+            SignedJWT signedJWT = SignedJWT.parse(request.getRefreshToken());
+            boolean verified = signedJWT.verify(new MACVerifier(SIGNER_KEY.getBytes()));
+            Date expireDate = signedJWT.getJWTClaimsSet().getExpirationTime();
+            if (!verified || expireDate.before(new Date())) {
+                throw new RuntimeException("Refresh token is invalid or expired");
+            }
+
+            String email = signedJWT.getJWTClaimsSet().getSubject();
+            UserEntity userEntity = authenticationRepository.findByEmail(email);
+            if (userEntity == null) {
+                throw new RuntimeException("User not found");
+            }
+
+            String newAccessToken = generateToken(userEntity, 60*60*1000);
+            AuthenticationResponse response = new AuthenticationResponse();
+            response.setAuthentication(true);
+            response.setToken(newAccessToken);
+            response.setRefreshToken(request.getRefreshToken());
+            return response;
+        } catch (Exception e) {
+            throw new RuntimeException("Refresh token failed: " + e.getMessage(), e);
+        }
+    }
+
+    public String generateToken(UserEntity userEntity, long expirationTimeMillis){
+        try {
+            Set<String> authorities = new HashSet<>();
+
+            userEntity.getRole().forEach(role -> {
+                authorities.add("ROLE_" + role.getName());
+
+                role.getPermission().forEach(permission ->
+                    authorities.add(permission.getName())
+                );
+            });
             JWSHeader header = new JWSHeader(JWSAlgorithm.HS256);
             JWTClaimsSet jwtClaimsSet = new JWTClaimsSet
                     .Builder()
                     .subject(userEntity.getEmail())
                     .issueTime(new Date())
-                    .expirationTime(new Date(System.currentTimeMillis()+60*60*1000))
+                    .expirationTime(new Date(System.currentTimeMillis()+expirationTimeMillis))
+                    .claim("scope", authorities)
                     .build();
             Payload payload = new Payload(jwtClaimsSet.toJSONObject());
             JWSObject jwsObject = new JWSObject(header, payload);

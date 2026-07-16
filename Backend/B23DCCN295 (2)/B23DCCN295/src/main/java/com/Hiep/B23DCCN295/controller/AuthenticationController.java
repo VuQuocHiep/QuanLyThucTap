@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.Hiep.B23DCCN295.dto.request.AuthenticationRequest;
 import com.Hiep.B23DCCN295.dto.request.IntrospectRequest;
+import com.Hiep.B23DCCN295.dto.request.RefreshTokenRequest;
 import com.Hiep.B23DCCN295.dto.response.AuthenticationResponse;
 import com.Hiep.B23DCCN295.dto.response.IntrospectResponse;
 import com.Hiep.B23DCCN295.service.AuthenticationService;
@@ -26,5 +27,10 @@ public class AuthenticationController {
     @PostMapping("/introspect")
     public ResponseEntity<IntrospectResponse> introspect(@RequestBody IntrospectRequest request){
         return ResponseEntity.ok(authenticationService.introspect(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthenticationResponse> refresh(@RequestBody RefreshTokenRequest request){
+        return ResponseEntity.ok(authenticationService.refreshToken(request));
     }
 }
