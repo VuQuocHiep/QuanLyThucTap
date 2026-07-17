@@ -1,9 +1,15 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+const API_BASE_URL = 'http://localhost:8080'
 
-const request = async (endpoint, { method = 'GET', body, headers = {}, ...options } = {}) => {
-  const token = localStorage.getItem('accessToken') || localStorage.getItem('token')
+const request = async (
+  endpoint,
+  { method = 'GET', body, headers = {}, ...options } = {}
+) => {
+  const token = localStorage.getItem('accessToken')
+
   const isFormData = body instanceof FormData
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const normalizedEndpoint = endpoint.startsWith('/')
+    ? endpoint
+    : `/${endpoint}`
 
   const config = {
     method,
@@ -16,38 +22,69 @@ const request = async (endpoint, { method = 'GET', body, headers = {}, ...option
   }
 
   if (body !== undefined && body !== null) {
-    config.body = isFormData || typeof body === 'string' ? body : JSON.stringify(body)
+    config.body =
+      isFormData || typeof body === 'string'
+        ? body
+        : JSON.stringify(body)
   }
 
-  const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, config)
-
-  if (!response.ok) {
-    const contentType = response.headers.get('content-type') || ''
-    const errorBody = contentType.includes('application/json')
-      ? await response.json().catch(() => null)
-      : await response.text().catch(() => '')
-
-    const errorMessage =
-      errorBody?.message ||
-      errorBody?.error ||
-      (typeof errorBody === 'string' ? errorBody : '') ||
-      'Yeu cau toi backend that bai'
-
-    throw new Error(errorMessage)
-  }
+  const response = await fetch(
+    `${API_BASE_URL}${normalizedEndpoint}`,
+    config
+  )
 
   const contentType = response.headers.get('content-type') || ''
-  if (contentType.includes('application/json')) {
-    return response.json()
+
+  const responseBody = contentType.includes('application/json')
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => '')
+
+  if (!response.ok) {
+    console.log('URL:', `${API_BASE_URL}${normalizedEndpoint}`)
+    console.log('Status:', response.status)
+    console.log('Response:', responseBody)
+
+    throw new Error(
+      responseBody?.message ||
+      responseBody?.error ||
+      `Backend lỗi ${response.status}`
+    )
   }
 
-  return response.text()
+  return responseBody
 }
 
 export const api = {
-  get: (endpoint, options) => request(endpoint, { ...options, method: 'GET' }),
-  post: (endpoint, body, options) => request(endpoint, { ...options, method: 'POST', body }),
-  put: (endpoint, body, options) => request(endpoint, { ...options, method: 'PUT', body }),
-  patch: (endpoint, body, options) => request(endpoint, { ...options, method: 'PATCH', body }),
-  delete: (endpoint, options) => request(endpoint, { ...options, method: 'DELETE' }),
+  get: (endpoint, options) =>
+    request(endpoint, {
+      ...options,
+      method: 'GET',
+    }),
+
+  post: (endpoint, body, options) =>
+    request(endpoint, {
+      ...options,
+      method: 'POST',
+      body,
+    }),
+
+  put: (endpoint, body, options) =>
+    request(endpoint, {
+      ...options,
+      method: 'PUT',
+      body,
+    }),
+
+  patch: (endpoint, body, options) =>
+    request(endpoint, {
+      ...options,
+      method: 'PATCH',
+      body,
+    }),
+
+  delete: (endpoint, options) =>
+    request(endpoint, {
+      ...options,
+      method: 'DELETE',
+    }),
 }

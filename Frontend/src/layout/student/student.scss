@@ -1,0 +1,26 @@
+.student * {
+  font-family: "Poppins", sans-serif;
+}
+.dropdown {
+  position: absolute;
+  top: 100%;
+  padding: 10px;
+  background-color: #e6f4ff;
+  border-radius: 10px;
+  width: 170px;
+  z-index: 222;
+  &-item {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      background-color: #7caed4;
+    }
+  }
+}

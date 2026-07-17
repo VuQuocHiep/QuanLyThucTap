@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { api } from '../../api/api'
+import { login } from '../../api/auth'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -17,58 +17,84 @@ function LoginPage() {
 
   const [loading, setLoading] = useState(false)
 
-  const handleLogin = async (values) => {
+  const decodeJwtPayload = (token) => {
     try {
-      setLoading(true)
+      const payloadPart = token.split('.')[1]
 
-      const response = await api.post('/auth/login', {
-        email: values.email,
-        password: values.password,
-      })
-
-      const accessToken =
-        response.accessToken ||
-        response.access_token ||
-        response.token
-
-      const refreshToken =
-        response.refreshToken ||
-        response.refresh_token
-
-      if (!accessToken) {
-        throw new Error('Backend không trả về access token')
+      if (!payloadPart) {
+        return null
       }
 
-      localStorage.setItem('accessToken', accessToken)
+      const base64 = payloadPart
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
 
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken)
-      }
+      const paddedBase64 = base64.padEnd(
+        base64.length + ((4 - (base64.length % 4)) % 4),
+        '='
+      )
 
-      // Tùy cấu trúc response backend
-      const user = response.user || response.data?.user
-      const roles = user?.roles || response.roles || []
+      const jsonPayload = decodeURIComponent(
+        atob(paddedBase64)
+          .split('')
+          .map((character) => {
+            return `%${character
+              .charCodeAt(0)
+              .toString(16)
+              .padStart(2, '0')}`
+          })
+          .join('')
+      )
 
-      if (user) {
-        localStorage.setItem('user', JSON.stringify(user))
-      }
-
-      message.success('Đăng nhập thành công')
-
-      redirectByRole(roles)
+      return JSON.parse(jsonPayload)
     } catch (error) {
-      message.error(error.message || 'Đăng nhập thất bại')
-    } finally {
-      setLoading(false)
+      console.error('Không đọc được JWT:', error)
+      return null
     }
   }
 
-  const redirectByRole = (roles) => {
-    const roleNames = roles.map((role) =>
-      typeof role === 'string'
-        ? role.toUpperCase()
-        : role.name?.toUpperCase()
-    )
+  const getRolesFromToken = (token) => {
+    const payload = decodeJwtPayload(token)
+
+    if (!payload) {
+      return []
+    }
+
+    const scope = payload.scope || []
+
+    const authorities = Array.isArray(scope)
+      ? scope
+      : typeof scope === 'string'
+        ? scope.split(' ')
+        : []
+
+    return authorities
+      .filter((authority) =>
+        String(authority).toUpperCase().startsWith('ROLE_')
+      )
+      .map((authority) =>
+        String(authority)
+          .toUpperCase()
+          .replace(/^ROLE_/, '')
+      )
+  }
+
+  const redirectByRole = (roles = []) => {
+    const roleNames = roles
+      .map((role) => {
+        if (typeof role === 'string') {
+          return role
+            .toUpperCase()
+            .replace(/^ROLE_/, '')
+        }
+
+        return role?.name
+          ?.toUpperCase()
+          .replace(/^ROLE_/, '')
+      })
+      .filter(Boolean)
+
+    console.log('Danh sách role:', roleNames)
 
     if (roleNames.includes('ADMIN')) {
       navigate('/admin', { replace: true })
@@ -86,6 +112,59 @@ function LoginPage() {
     }
 
     navigate('/home', { replace: true })
+  }
+
+  const handleLogin = async (values) => {
+    try {
+      setLoading(true)
+
+      const response = await login({
+        email: values.email,
+        password: values.password,
+      })
+
+      const data = response?.data || response
+
+      const accessToken =
+        data?.accessToken ||
+        data?.access_token ||
+        data?.token
+
+      const refreshToken =
+        data?.refreshToken ||
+        data?.refresh_token
+
+      if (!accessToken) {
+        throw new Error('Backend không trả về access token')
+      }
+
+      localStorage.setItem('accessToken', accessToken)
+
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken)
+      } else {
+        localStorage.removeItem('refreshToken')
+      }
+
+      const roles = getRolesFromToken(accessToken)
+
+      localStorage.setItem('roles', JSON.stringify(roles))
+
+      console.log('Login response:', data)
+      console.log('Roles lấy từ token:', roles)
+
+      message.success('Đăng nhập thành công')
+
+      redirectByRole(roles)
+    } catch (error) {
+      console.error('Login error:', error)
+
+      message.error(
+        error?.message || 'Đăng nhập thất bại'
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
