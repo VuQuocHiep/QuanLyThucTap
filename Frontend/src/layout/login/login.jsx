@@ -1,6 +1,8 @@
 import './login.scss'
 
+import { jwtDecode } from 'jwt-decode'
 import { useState } from 'react'
+import { useDispatch } from 'react-redux'
 import { Row, Col, Form, Input, Button, App } from 'antd'
 import {
   AppstoreOutlined,
@@ -10,154 +12,110 @@ import {
 import { Link, useNavigate } from 'react-router-dom'
 
 import { login } from '../../api/auth'
+import { getMyInfo } from '../../api/user'
+import { setUser } from '../../redux/userSlice'
 
 function LoginPage() {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { message } = App.useApp()
 
   const [loading, setLoading] = useState(false)
 
-  const decodeJwtPayload = (token) => {
-    try {
-      const payloadPart = token.split('.')[1]
-
-      if (!payloadPart) {
-        return null
-      }
-
-      const base64 = payloadPart
-        .replace(/-/g, '+')
-        .replace(/_/g, '/')
-
-      const paddedBase64 = base64.padEnd(
-        base64.length + ((4 - (base64.length % 4)) % 4),
-        '='
-      )
-
-      const jsonPayload = decodeURIComponent(
-        atob(paddedBase64)
-          .split('')
-          .map((character) => {
-            return `%${character
-              .charCodeAt(0)
-              .toString(16)
-              .padStart(2, '0')}`
-          })
-          .join('')
-      )
-
-      return JSON.parse(jsonPayload)
-    } catch (error) {
-      console.error('Không đọc được JWT:', error)
-      return null
-    }
-  }
-
   const getRolesFromToken = (token) => {
-    const payload = decodeJwtPayload(token)
+    try {
+      const payload = jwtDecode(token)
 
-    if (!payload) {
+      const scope = Array.isArray(payload.scope)
+        ? payload.scope
+        : String(payload.scope || '').split(' ')
+
+      return scope
+        .filter((item) => item.startsWith('ROLE_'))
+        .map((item) => item.replace('ROLE_', ''))
+    } catch (error) {
+      console.error('JWT không hợp lệ:', error)
       return []
     }
-
-    const scope = payload.scope || []
-
-    const authorities = Array.isArray(scope)
-      ? scope
-      : typeof scope === 'string'
-        ? scope.split(' ')
-        : []
-
-    return authorities
-      .filter((authority) =>
-        String(authority).toUpperCase().startsWith('ROLE_')
-      )
-      .map((authority) =>
-        String(authority)
-          .toUpperCase()
-          .replace(/^ROLE_/, '')
-      )
   }
 
-  const redirectByRole = (roles = []) => {
-    const roleNames = roles
-      .map((role) => {
-        if (typeof role === 'string') {
-          return role
-            .toUpperCase()
-            .replace(/^ROLE_/, '')
-        }
-
-        return role?.name
-          ?.toUpperCase()
-          .replace(/^ROLE_/, '')
-      })
-      .filter(Boolean)
-
-    console.log('Danh sách role:', roleNames)
-
-    if (roleNames.includes('ADMIN')) {
-      navigate('/admin', { replace: true })
-      return
+  const redirectByRole = (roles) => {
+    const roleRoutes = {
+      ADMIN: '/admin',
+      LECTURER: '/lecturer',
+      STUDENT: '/student',
     }
 
-    if (roleNames.includes('LECTURER')) {
-      navigate('/lecturer', { replace: true })
-      return
-    }
+    const role = roles.find(
+      (item) => roleRoutes[item]
+    )
 
-    if (roleNames.includes('STUDENT')) {
-      navigate('/student', { replace: true })
-      return
-    }
-
-    navigate('/home', { replace: true })
+    navigate(roleRoutes[role] || '/home', {
+      replace: true,
+    })
   }
 
   const handleLogin = async (values) => {
     try {
       setLoading(true)
 
-      const response = await login({
-        email: values.email,
+      // Xóa token cũ để tránh gửi token hỏng vào login
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('roles')
+
+      // 1. Đăng nhập
+      const data = await login({
+        email: values.email.trim(),
         password: values.password,
       })
 
-      const data = response?.data || response
-
-      const accessToken =
-        data?.accessToken ||
-        data?.access_token ||
-        data?.token
-
-      const refreshToken =
-        data?.refreshToken ||
-        data?.refresh_token
+      const accessToken = data?.token
+      const refreshToken = data?.refreshToken
 
       if (!accessToken) {
-        throw new Error('Backend không trả về access token')
+        throw new Error(
+          'Backend không trả về access token'
+        )
       }
 
-      localStorage.setItem('accessToken', accessToken)
+      // 2. Lưu token
+      localStorage.setItem(
+        'accessToken',
+        accessToken
+      )
 
       if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken)
-      } else {
-        localStorage.removeItem('refreshToken')
+        localStorage.setItem(
+          'refreshToken',
+          refreshToken
+        )
       }
 
+      // 3. Lấy role từ token
       const roles = getRolesFromToken(accessToken)
 
-      localStorage.setItem('roles', JSON.stringify(roles))
+      localStorage.setItem(
+        'roles',
+        JSON.stringify(roles)
+      )
 
-      console.log('Login response:', data)
-      console.log('Roles lấy từ token:', roles)
+      // 4. Gọi GET /user/me
+      const userData = await getMyInfo()
+
+      // 5. Lưu UserEntity vào Redux
+      dispatch(setUser(userData))
 
       message.success('Đăng nhập thành công')
 
+      // 6. Chuyển trang
       redirectByRole(roles)
     } catch (error) {
       console.error('Login error:', error)
+
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('roles')
 
       message.error(
         error?.message || 'Đăng nhập thất bại'
@@ -190,9 +148,9 @@ function LoginPage() {
             </div>
 
             <div className="login__left-content">
-              Nền tảng số hoá toàn bộ quy trình đăng ký, phân công
-              và theo dõi thực tập dành cho sinh viên và giảng viên
-              hướng dẫn.
+              Nền tảng số hoá toàn bộ quy trình đăng ký,
+              phân công và theo dõi thực tập dành cho sinh
+              viên và giảng viên hướng dẫn.
             </div>
           </div>
 
@@ -235,7 +193,8 @@ function LoginPage() {
                   },
                   {
                     type: 'email',
-                    message: 'Email không đúng định dạng',
+                    message:
+                      'Email không đúng định dạng',
                   },
                 ]}
               >

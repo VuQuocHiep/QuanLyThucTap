@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,7 +40,13 @@ public class UserController {
     public ResponseEntity<UserEntity> getUserByEmail(@PathVariable String email){
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
-
+    @GetMapping("/me")
+    public ResponseEntity<UserEntity> getMyInfo(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(
+                userService.getUserByEmail(email)
+        );
+    }
     @PatchMapping("/updateUser/{email}")
     public ResponseEntity<UserEntity> updateUser(@PathVariable String email,@Valid @RequestBody UserRequest request){
         return ResponseEntity.ok(userService.updateUser(email, request));

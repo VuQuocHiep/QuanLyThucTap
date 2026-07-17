@@ -16,7 +16,9 @@ export const userApi = {
       `${USER_URL}/getUserByEmail/${encodeURIComponent(email)}`
     )
   },
-
+  getMyInfo: () => {
+    return api.get(`${USER_URL}/me`)
+  },
   updateUser: (email, userData) => {
     return api.patch(
       `${USER_URL}/updateUser/${encodeURIComponent(email)}`,
@@ -30,3 +32,4 @@ export const userApi = {
     )
   },
 }
+export const getMyInfo = userApi.getMyInfo
