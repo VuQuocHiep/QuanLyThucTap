@@ -1,5 +1,4 @@
 package com.Hiep.B23DCCN295.entity;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -9,12 +8,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import com.Hiep.B23DCCN295.enums.StatusInternship;
+import com.Hiep.B23DCCN295.enums.StatusRegisterLecturer;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -24,39 +25,30 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Table(name = "internship")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class InternshipEntity {
-
+@Table(name = "registerLecturer")
+public class RegisterLecturerEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-     String internshipId;
-     String name;
-     String description;
-     int semester;
-     int year;
-     LocalDate registerOpenDate;
-     LocalDate registerCloseDate;
-
-     LocalDate startDate = LocalDate.now();
-
-     LocalDate endDate = LocalDate.now().plusDays(90);
-
+    String registerLecturerId;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "studentId")
+    UserEntity student;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "lecturerId")
+    UserEntity lecturer;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "internshipId")
+    InternshipEntity internship;
     @Enumerated(EnumType.STRING)
-     StatusInternship status = StatusInternship.OPENING;
-
-     int amountStudent = 20;
-
-     boolean deleted = false;
-
-    @CreationTimestamp
+    StatusRegisterLecturer status = StatusRegisterLecturer.PENDING;
+    @CreationTimestamp 
     @Column(updatable = false)
-     LocalDateTime createdAt;
-
+    LocalDateTime createdAt;
     @UpdateTimestamp
-     LocalDateTime updatedAt;
+    LocalDateTime updatedAt;
 }
