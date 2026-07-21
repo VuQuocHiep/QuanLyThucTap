@@ -41,4 +41,8 @@ public class RegisterLecturerController {
 
         return registerLecturerService.getStudentsByLecturersInternship(userId, internshipId);
     }
+    @GetMapping("/countStudentOfLecturer/{userId}/{internshipId}")
+    public long countStudentOfLecturer(@PathVariable String userId,@PathVariable String internshipId){
+        return registerLecturerService.countStudentOfLecturer(userId, internshipId);
+    }
 }

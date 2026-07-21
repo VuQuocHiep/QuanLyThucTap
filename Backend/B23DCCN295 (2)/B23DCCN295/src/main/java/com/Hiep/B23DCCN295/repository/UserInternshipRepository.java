@@ -25,9 +25,10 @@ public interface UserInternshipRepository
         findByInternshipEntity_InternshipId(String internshipId);
 
     List<UserInternshipEntity>
-        findByInternshipEntity_InternshipIdAndType(
+        findByInternshipEntity_InternshipIdAndUserEntity_UserIdAndType(
             String internshipId,
-            String type
+            String userId,
+            TypeUserInternship type
         );
 
     boolean existsByUserEntity_UserIdAndInternshipEntity_InternshipId(

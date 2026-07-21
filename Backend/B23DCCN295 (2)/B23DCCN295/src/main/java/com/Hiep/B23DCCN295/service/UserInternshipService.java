@@ -9,6 +9,7 @@ import com.Hiep.B23DCCN295.dto.request.UserInternshipRequest;
 import com.Hiep.B23DCCN295.entity.InternshipEntity;
 import com.Hiep.B23DCCN295.entity.UserEntity;
 import com.Hiep.B23DCCN295.entity.UserInternshipEntity;
+import com.Hiep.B23DCCN295.enums.TypeUserInternship;
 import com.Hiep.B23DCCN295.repository.InternshipRepository;
 import com.Hiep.B23DCCN295.repository.UserInternshipRepository;
 import com.Hiep.B23DCCN295.repository.UserRopository;
@@ -67,15 +68,15 @@ public class UserInternshipService {
         }
         return u;
     }
-    public List<UserInternshipEntity> getStudentByInternship(String internshipId){
-        List<UserInternshipEntity> u = userInternshipRepository.findByInternshipEntity_InternshipIdAndType(internshipId,"STUDENT");
+    public List<UserInternshipEntity> getStudentByInternship(String internshipId,String userId){
+        List<UserInternshipEntity> u = userInternshipRepository.findByInternshipEntity_InternshipIdAndUserEntity_UserIdAndType(internshipId,userId,TypeUserInternship.STUDENT);
         if(u.isEmpty()){
             throw new RuntimeException("Not found!");
         }
         return u;
     }
-    public List<UserInternshipEntity> getLecturerByInternship(String internshipId){
-        List<UserInternshipEntity> u = userInternshipRepository.findByInternshipEntity_InternshipIdAndType(internshipId,"LECTURER");
+    public List<UserInternshipEntity> getLecturerByInternship(String internshipId,String userId){
+        List<UserInternshipEntity> u = userInternshipRepository.findByInternshipEntity_InternshipIdAndUserEntity_UserIdAndType(internshipId,userId,TypeUserInternship.LECTURER);
         if(u.isEmpty()){
             throw new RuntimeException("Not found!");
         }

@@ -70,7 +70,7 @@ public class RegisterLecturerService {
                                 .lecturer(lecturer)
                                 .student(student)
                                 .internship(internship)
-                                .status(StatusRegisterLecturer.valueOf(request.getStatus()))
+                                .status(StatusRegisterLecturer.PENDING)
                                 .build();
         return registerLecturerRepository.save(registerLecturerEntity);
     }
@@ -79,5 +79,8 @@ public class RegisterLecturerService {
     }
     public List<RegisterLecturerEntity> getStudentsByLecturersInternship(String userId,String internshipId){
         return registerLecturerRepository.findByLecturer_UserIdAndInternship_InternshipIdAndStatus(userId, internshipId,StatusRegisterLecturer.APPROVAL);
+    }
+    public long countStudentOfLecturer(String userId,String internshipId){
+        return registerLecturerRepository.countByLecturer_UserIdAndInternship_InternshipId(userId,internshipId);
     }
 }

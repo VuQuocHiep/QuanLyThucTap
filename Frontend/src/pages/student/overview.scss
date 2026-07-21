@@ -1,0 +1,27 @@
+.student-overview {
+  padding: 20px;
+
+  .overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    h1 {
+      margin: 0;
+      color: #285b89;
+    }
+  }
+
+  .ant-card {
+    text-align: center;
+  }
+
+  .ant-statistic-title {
+    color: #666;
+  }
+
+  .ant-statistic-content {
+    color: #285b89;
+  }
+}

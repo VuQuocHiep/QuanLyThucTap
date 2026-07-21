@@ -29,4 +29,13 @@ public interface RegisterLecturerRepository extends JpaRepository<RegisterLectur
         String internshipId,
         StatusRegisterLecturer status
     );
+    List<RegisterLecturerEntity>
+        findByLecturer_UserIdAndInternship_InternshipId(
+            String lecturerId,
+            String internshipId
+        );
+    long countByLecturer_UserIdAndInternship_InternshipId(
+        String lecturerId,
+        String internshipId
+    );
 }

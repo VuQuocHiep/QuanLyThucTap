@@ -13,5 +13,4 @@ public class RegisterLecturerRequest {
     String studentId;
     String lecturerId;
     String internshipId;
-    String status;
 }

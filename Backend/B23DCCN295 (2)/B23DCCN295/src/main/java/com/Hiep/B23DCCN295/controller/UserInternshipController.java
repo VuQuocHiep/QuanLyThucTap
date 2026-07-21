@@ -38,12 +38,12 @@ public class UserInternshipController {
     public ResponseEntity<List<UserInternshipEntity>> getByInternship(@PathVariable String internshipId){
         return ResponseEntity.ok(userInternshipService.getByInternship(internshipId));
     }
-    @GetMapping("/getStudentByInternship/{internshipId}")
-    public ResponseEntity<List<UserInternshipEntity>> getStudentByInternship(@PathVariable String internshipId){
-        return ResponseEntity.ok(userInternshipService.getStudentByInternship(internshipId));
+    @GetMapping("/getStudentByInternship/{internshipId}/{userId}")
+    public ResponseEntity<List<UserInternshipEntity>> getStudentByInternship(@PathVariable String internshipId,@PathVariable String userId){
+        return ResponseEntity.ok(userInternshipService.getStudentByInternship(internshipId,userId));
     }
-    @GetMapping("/getLecturerByInternship/{internshipId}")
-    public ResponseEntity<List<UserInternshipEntity>> getLecturerByInternship(@PathVariable String internshipId){
-        return ResponseEntity.ok(userInternshipService.getLecturerByInternship(internshipId));
+    @GetMapping("/getLecturerByInternship/{internshipId}/{userId}")
+    public ResponseEntity<List<UserInternshipEntity>> getLecturerByInternship(@PathVariable String internshipId,@PathVariable String userId){
+        return ResponseEntity.ok(userInternshipService.getLecturerByInternship(internshipId,userId));
     }
 }
